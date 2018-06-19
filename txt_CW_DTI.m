@@ -3,40 +3,43 @@ cur_dir = pwd;
 cd /Users/aborders/Dropbox/Projects/DTI/data/
   %Set working directory
 
-
+curSub = 101;
 [z,headervars] = eprimetxt2vars('CW_DTI-101-1.txt');
 
 CWmask = strcmp('CWTrials', cellstr(z.Procedure));
 ntrials = sum(CWmask);
+
+    CenterY = 512;
+    CenterX = 640;
 
 rx = z.MouseResponseX(CWmask);
 ry = z.MouseResponseY(CWmask);
 cx = z.MouseCorrectX(CWmask);
 cy = z.MouseCorrectY(CWmask);
 
-    respX = cell2str(rx);
-    respY = cellstr(ry);
-    corrX = cellstr(cx);
-    corrY = cellstr(cy);
+%     respX = cell2str(rx);
+%     respY = cellstr(ry);
+%     corrX = cellstr(cx);
+%     corrY = cellstr(cy);
 
 
     absAngleError = nan(ntrials,1);  
-    TargAng = nan(nPre,1); 
-    RespAng = nan(nPre,1);
+    TargAng = nan(ntrials,1); 
+    RespAng = nan(ntrials,1);
 
-    for itrial = 1:nPre
+    for itrial = 1:ntrials
 
         %If they don't move the mouse, don't analyze trial
-        if RespXpre(itrial) == CenterX && RespYpre(itrial) == CenterY
+        if rx{itrial} == CenterX && ry{itrial} == CenterY
             absAngleError(itrial,1) = NaN;            
             TargAng(itrial,1) = NaN;
             RespAng(itrial,1) = NaN;
             
         else
-            ang1 = atan2(CenterY - CorrYpre(itrial), ...
-                CorrXpre(itrial) - CenterX)*180/pi;
-            ang2 = atan2(CenterY - RespYpre(itrial), ...
-                RespXpre(itrial) - CenterX)*180/pi; 
+            ang1 = atan2(CenterY - cy{itrial}, ...
+                cx{itrial} - CenterX)*180/pi;
+            ang2 = atan2(CenterY - ry{itrial}, ...
+                rx{itrial} - CenterX)*180/pi; 
 
             rawanger = ceil(min(mod(ang1-ang2, 360),mod(ang2-ang1, 360)));           
             iangerr = max(1,rawanger);
@@ -46,20 +49,70 @@ cy = z.MouseCorrectY(CWmask);
             RespAng(itrial,1) = ang2;
         end
        
-    end %iPRE trials
+    end %itrials
+
+%% Model fits
+
+%     %if NANs, remove
+%     RespAng = RespAng(~any(isnan(RespAng),2),:);
+%     TargAng = TargAng(~any(isnan(TargAng),2),:);
+%     absAngleError = absAngleError(~any(isnan(absAngleError),2),:);
+%     
+    col_targ = wrap(TargAng/180*pi);
+    col_resp = wrap(RespAng/180*pi);
+    
+% Precision & Bias
+    [P,B] = JV10_error(col_resp, col_targ);
+
+% Mixture Model
+    [Par, LL] = JV10_fit(col_resp, col_targ);
+
+    col_k = Par(1);
+    col_pT = Par(2);
+    col_pG = Par(4);
+    col_LL = LL;  
+    col_sd = rad2deg(k2sd(Par(1)));
+
+
+%     col_k(isub,1) = Par(1);
+%     col_pT(isub,1) = Par(2);
+%     col_pG(isub,1) = Par(4);
+%     col_LL(isub,1) = LL;  
+%     col_sd(isub,1) = rad2deg(k2sd(Par(1)));
+
+%% graph histogram
+    nbins = 90;
+    figure(curSub)
+    histogram(absAngleError,nbins)
 
 
 
 
-
-
-
-
-
-
-
-
-  
+ 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+ %% Old Code    
 subs = {143};
 
 
