@@ -1,27 +1,38 @@
 clear
 cur_dir = pwd;
+%% Global
 cd /Users/aborders/Dropbox/Projects/DTI/data/
   %Set working directory
 
-curSub = 101;
-[z,headervars] = eprimetxt2vars('CW_DTI-101-1.txt');
+subs = {'101' '102'};
 
-CWmask = strcmp('CWTrials', cellstr(z.Procedure));
-ntrials = sum(CWmask);
+col_sub = nan(length(subs)+1,1);
+col_k = nan(length(subs)+1,1);
+col_pT = nan(length(subs)+1,1);
+col_pG = nan(length(subs)+1,1);
+col_LL = nan(length(subs)+1,1);
 
     CenterY = 512;
     CenterX = 640;
+    
+%% sub specific
+for isub = 1:length(subs)
+    curSub = str2num(subs{isub});
+    col_sub(isub) = curSub;
+
+
+ fstub = sprintf('CW_DTI-%d-1.txt', curSub); 
+ [z,headervars] = eprimetxt2vars(fstub);
+    
+%[z,headervars] = eprimetxt2vars('CW_DTI-101-1.txt');
+
+CWmask = strcmp('CWTrials', cellstr(z.Procedure));
+ntrials = sum(CWmask);
 
 rx = z.MouseResponseX(CWmask);
 ry = z.MouseResponseY(CWmask);
 cx = z.MouseCorrectX(CWmask);
 cy = z.MouseCorrectY(CWmask);
-
-%     respX = cell2str(rx);
-%     respY = cellstr(ry);
-%     corrX = cellstr(cx);
-%     corrY = cellstr(cy);
-
 
     absAngleError = nan(ntrials,1);  
     TargAng = nan(ntrials,1); 
@@ -53,11 +64,13 @@ cy = z.MouseCorrectY(CWmask);
 
 %% Model fits
 
-%     %if NANs, remove
-%     RespAng = RespAng(~any(isnan(RespAng),2),:);
-%     TargAng = TargAng(~any(isnan(TargAng),2),:);
-%     absAngleError = absAngleError(~any(isnan(absAngleError),2),:);
-%     
+    %if NANs, remove
+    RespAng = RespAng(~any(isnan(RespAng),2),:);
+    TargAng = TargAng(~any(isnan(TargAng),2),:);
+    absAngleError = absAngleError(~any(isnan(absAngleError),2),:);
+    
+    col_abserr = absAngleError;
+    
     col_targ = wrap(TargAng/180*pi);
     col_resp = wrap(RespAng/180*pi);
     
@@ -67,30 +80,43 @@ cy = z.MouseCorrectY(CWmask);
 % Mixture Model
     [Par, LL] = JV10_fit(col_resp, col_targ);
 
-    col_k = Par(1);
-    col_pT = Par(2);
-    col_pG = Par(4);
-    col_LL = LL;  
-    col_sd = rad2deg(k2sd(Par(1)));
-
-
-%     col_k(isub,1) = Par(1);
-%     col_pT(isub,1) = Par(2);
-%     col_pG(isub,1) = Par(4);
-%     col_LL(isub,1) = LL;  
-%     col_sd(isub,1) = rad2deg(k2sd(Par(1)));
+    col_k(isub,1) = Par(1);
+    col_pT(isub,1) = Par(2);
+    col_pG(isub,1) = Par(4);
+    col_LL(isub,1) = LL;  
+    col_sd(isub,1) = rad2deg(k2sd(Par(1)));
 
 %% graph histogram
     nbins = 90;
     figure(curSub)
     histogram(absAngleError,nbins)
 
-
-
-
+    %% Write out sub trial data
+CWhdr = {'Target' 'Response' 'AbsErr'};
+CWdata = [col_targ col_resp col_abserr ];
  
-    
-    
+      m = [CWhdr;num2cell(CWdata)];      
+      cname = sprintf('ModParam_%d.csv', curSub);
+          fid = fopen(cname, 'w');
+          fprintf(fid, '%s,', m{1,1:end-1});
+          fprintf(fid, '%s\n', m{1,end});
+          fclose(fid);
+      dlmwrite(cname, m(2:end,:), '-append');     
+
+end %isub
+
+
+   %% Write dataset with individual parameters
+FIThdr = {'Subject' 'K' 'sd' 'pTarget' 'pGuess' 'LL'};
+FITdat = [col_sub col_k col_sd col_pT col_pG col_LL];
+
+    x = [FIThdr;num2cell(FITdat)];
+    xname = sprintf('FullParam.csv');
+        fid = fopen(xname, 'w');
+        fprintf(fid, '%s,', x{1,1:end-1});
+        fprintf(fid, '%s\n', x{1,end});
+        fclose(fid);
+    dlmwrite(xname, x(2:end,:), '-append'); 
     
     
     
