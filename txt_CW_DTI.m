@@ -6,11 +6,11 @@ cd /Users/aborders/Dropbox/Projects/DTI/data/
 
 subs = {'101' '102'};
 
-col_sub = nan(length(subs)+1,1);
-col_k = nan(length(subs)+1,1);
-col_pT = nan(length(subs)+1,1);
-col_pG = nan(length(subs)+1,1);
-col_LL = nan(length(subs)+1,1);
+col_sub = nan(length(subs),1);
+col_k = nan(length(subs),1);
+col_pT = nan(length(subs),1);
+col_pG = nan(length(subs),1);
+col_LL = nan(length(subs),1);
 
     CenterY = 512;
     CenterX = 640;
